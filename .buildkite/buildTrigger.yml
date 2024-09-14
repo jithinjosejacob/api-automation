@@ -1,0 +1,13 @@
+
+
+- wait 
+
+- trigger : "test-ui-automation"  # target pipeline name
+  async: false
+  build:
+    message: "Triggered from test frontend"
+    commit: "HEAD"
+    branch: "master"
+  
+- block: ':thinking_face: PRD?|?'
+  branches: master
