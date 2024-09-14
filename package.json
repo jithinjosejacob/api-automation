@@ -1,0 +1,27 @@
+{
+  "name": "api-automation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --config .mocharc.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jithinjosejacob/api-automation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jithinjosejacob/api-automation/issues"
+  },
+  "homepage": "https://github.com/jithinjosejacob/api-automation#readme",
+  "devDependencies": {
+    "async-retry": "^1.3.3",
+    "axios": "^1.7.7",
+    "mocha": "^10.7.3",
+    "mochawesome": "^7.1.3",
+    "mochawesome-report-generator": "^6.2.0"
+  }
+}
