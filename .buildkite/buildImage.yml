@@ -1,0 +1,17 @@
+env: 
+  BUILDKITE_CLEAN_CHECKOUT: true 
+  WTF_DEPLOY_ROLE: QualityEngineeringAutomationToolingDeployRole 
+  CUSTOM_PRINCIPALS: "arn:aws:iam::778082898154:root" 
+  IMAGE_NAME: "test-ui-automation" 
+  
+steps: 
+  - name: ":ecr: Build STG docker to ECR image tagged as latest" 
+    plugins: 
+      https://github.com/tyro-private/container-publish-buildkite-plugin#v1.7.16: 
+        image-name: "${IMAGE_NAME}" 
+        custom-principals: ${CUSTOM_PRINCIPALS} 
+        team-name: quality_engineering 
+        custom-tags: 
+          - "latest" 
+        publish-to-prod: false 
+        trigger-container-check: false

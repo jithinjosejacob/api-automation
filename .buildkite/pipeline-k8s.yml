@@ -1,0 +1,14 @@
+env: 
+  BUILDKITE_CLEAN_CHECKOUT: true 
+  CUSTOM_PRINCIPALS: 'arn:aws:iam::778082898154:root' 
+  AUTOMATION_ROLE: 'QualityEngineeringAutomationToolingDeployRole' 
+  IMAGE_NAME: 'test-ui-automation-docker-img' 
+
+steps: 
+  - name: ':Deploy test image to ECR:' 
+    plugins: 
+      - ssh://git@github.com/tyro-private/buildkite-pipeline-shared-library#v2.0: 
+          build-args: 
+            - APPVERSION=${BUILDKITE_BUILD_NUMBER} 
+          image-name: test-ui-automation 
+          team-name: quality-engineering

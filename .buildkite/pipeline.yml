@@ -1,0 +1,104 @@
+env: 
+  BUILDKITE_CLEAN_CHECKOUT: true 
+  WTF_DEPLOY_ROLE: QualityEngineeringAutomationToolingDeployRole 
+  CUSTOM_PRINCIPALS: "arn:aws:iam::778082898154:root" 
+  IMAGE_NAME: "playwright-bionic" 
+  
+steps: 
+  - if: build.branch != "master" 
+    label: "Checking ECR Upload is Needed" 
+    plugins: 
+      chronotc/monorepo-diff#v2.1.2: 
+        diff: .buildkite/scripts/diff-against-last-successful-build.sh 
+        watch: 
+          - path: 
+              - "Dockerfile" 
+              - "package-lock.json" 
+            config: 
+              command: "buildkite-agent pipeline upload .buildkite/buildImage.yml" 
+              label: "Upload ECR building pipeline" 
+            # - if: build.source != "schedule" && build.source != "trigger_job" 
+            # label: "Checking Terraform Infra Build is Needed" 
+            # plugins: 
+            #   chronotc/monorepo-diff#v2.1.2: 
+            #     diff: .buildkite/scripts/diff-against-last-successful-build.sh 
+            #     watch: 
+            #       - path: "terraform/" 
+            #         config: 
+            #           label: "test-ui-automation-infra" 
+            #           trigger: "test-ui-automation-infra" 
+            #           async: false 
+            #           build: 
+            #           message: "$BUILDKITE_MESSAGE" 
+            #           env: 
+            #             - "$BUILDKITE_TAG" 
+  - wait: ~ 
+  - name: ':Deploy test image to ECR:' 
+  
+    if: build.source != "schedule" && build.source != "trigger_job" && build.source != "ui" 
+    plugins: 
+      - ssh://git@github.com/tyro-private/buildkite-pipeline-shared-library#v2.0: 
+          build-args: 
+            - APPVERSION=${BUILDKITE_BUILD_NUMBER} 
+          image-name: test-ui-automation 
+          team-name: quality-engineering 
+          
+  - name: ':playwright: Run web tests in dev' 
+    if: build.branch != "master" && build.source != "schedule" && build.source != "trigger_job" && build.source != "ui" 
+    agents: 
+        queue: development 
+    plugins: 
+      cultureamp/aws-assume-role#v0.2.0: 
+        role: arn:aws:iam::${ACCOUNT_ID_DEV}:role/qualityengineering/${WTF_DEPLOY_ROLE} 
+        https://github.com/tyro-private/vault-buildkite-plugin#v0.18: 
+        business-unit: quality-engineering 
+        role: arn:aws:iam::${ACCOUNT_ID_DEV}:role/qualityengineering/${WTF_DEPLOY_ROLE} 
+        aws-account: dev 
+        secrets: 
+          - path: secret/quality-engineering/test/test-ui-automation 
+            key: MULTI_MID_ACC_USERNAME 
+            env_name: MULTI_MID_ACC_USERNAME 
+          - path: secret/quality-engineering/test/test-ui-automation 
+            key: BASE_URL
+            env_name: BASE_URL
+        docker#v3.3.0: 
+          environment: 
+            - MULTI_MID_ACC_USERNAME 
+            - ENV=dev
+            - BASE_URL 
+            - BUILD_NUMBER=${BUILDKITE_BUILD_NUMBER} 
+          always-pull: true 
+          image: "${ACCOUNT_ID_BUILD}.dkr.ecr.ap-southeast-2.amazonaws.com/${IMAGE_NAME}:latest" 
+          workdir: /app 
+        command: 
+          - npm run test
+
+  - name: ':playwright: Run web tests in staging' 
+    if: build.branch != "master" && build.source != "schedule" && build.source != "trigger_job" && build.source != "ui" 
+    agents: 
+        queue: staging
+    plugins: 
+      cultureamp/aws-assume-role#v0.2.0: 
+        role: arn:aws:iam::${ACCOUNT_ID_STG}:role/qualityengineering/${WTF_DEPLOY_ROLE} 
+        https://github.com/tyro-private/vault-buildkite-plugin#v0.18: 
+        business-unit: quality-engineering 
+        role: arn:aws:iam::${ACCOUNT_ID_STG}:role/qualityengineering/${WTF_DEPLOY_ROLE} 
+        aws-account: stg
+        secrets: 
+          - path: secret/quality-engineering/test/test-ui-automation 
+            key: MULTI_MID_ACC_USERNAME 
+            env_name: MULTI_MID_ACC_USERNAME 
+          - path: secret/quality-engineering/test/test-ui-automation 
+            key: BASE_URL
+            env_name: BASE_URL
+        docker#v3.3.0: 
+          environment: 
+            - MULTI_MID_ACC_USERNAME 
+            - ENV=staging
+            - BASE_URL 
+            - BUILD_NUMBER=${BUILDKITE_BUILD_NUMBER} 
+          always-pull: true 
+          image: "${ACCOUNT_ID_BUILD}.dkr.ecr.ap-southeast-2.amazonaws.com/${IMAGE_NAME}:latest" 
+          workdir: /app 
+        command: 
+          - npm run test
